@@ -17,6 +17,11 @@ concurrency: release
 
 jobs:
   macos:
+    # Separate Apple Silicon and Intel builds; both jobs add their platform to one latest.json.
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
     runs-on: macos-latest
     permissions:
       contents: write
@@ -46,10 +51,11 @@ jobs:
           cache: pnpm
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-darwin,x86_64-apple-darwin
+          targets: ${{ matrix.target }}
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri
+          key: ${{ matrix.target }}
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
@@ -67,7 +73,7 @@ jobs:
           releaseCommitish: main
           projectPath: apps/desktop
           tauriScript: pnpm tauri
-          args: --target universal-apple-darwin
+          args: --target ${{ matrix.target }}
           tagName: v__VERSION__
           releaseName: Voiceclone Studio v__VERSION__
           releaseDraft: false
